@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\LMSDataExtraction.Domain\LMSDataExtraction.Domain.csproj" />
     <ProjectReference Include="..\LMSDataExtraction.Application\LMSDataExtraction.Application.csproj" />
   </ItemGroup>
