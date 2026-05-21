@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: lms_database
+    environment:
+      POSTGRES_DB: lmsdataextraction
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - lms_data:/var/lib/postgresql/data
+
+volumes:
+  lms_data:
