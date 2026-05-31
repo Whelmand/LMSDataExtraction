@@ -2,6 +2,7 @@ using LMSDataExtraction.Api.Middleware;
 using LMSDataExtraction.Application.Interfaces;
 using LMSDataExtraction.Infrastructure.Canvas;
 using LMSDataExtraction.Infrastructure.Persistence;
+using LMSDataExtraction.Infrastructure.Sources;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -19,6 +20,11 @@ void ConfigureDatabase(DbContextOptionsBuilder options)
 
 // Repositories
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+
+// External source adapters (mock for now, swap to live implementations later)
+builder.Services.AddScoped<IPortflowSource, PortflowMockSource>();
+builder.Services.AddScoped<IFeedPulseSource, FeedPulseMockSource>();
+builder.Services.AddScoped<ICompetenceSource, CompetenceMockSource>();
 
 // Caching
 builder.Services.AddMemoryCache();
