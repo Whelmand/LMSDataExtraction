@@ -1,12 +1,17 @@
+using LMSDataExtraction.Application.Dtos;
 using LMSDataExtraction.Application.Interfaces;
+using LMSDataExtraction.Application.Mapping;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LMSDataExtraction.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class CourseController : ControllerBase
 {
+    private const string AuthorizationHeader = "Authorization";
+    private const string BearerPrefix = "Bearer ";
+
     private readonly ICanvasService _canvasService;
 
     public CourseController(ICanvasService canvasService)
@@ -17,10 +22,12 @@ public class CourseController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var authHeader = Request.Headers["Authorization"].ToString();
-        var token = authHeader.Replace("Bearer ", "");
+        string authHeader = Request.Headers[AuthorizationHeader].ToString();
+        string token = authHeader.Substring(BearerPrefix.Length).Trim();
 
-        var courses = await _canvasService.GetCoursesAsync(token);
-        return Ok(courses);
+        IEnumerable<CanvasCourseDto> canvasCourses = await _canvasService.GetCoursesAsync(token);
+        IEnumerable<CourseResponseDto> response = CourseMapper.ToResponseList(canvasCourses);
+
+        return Ok(response);
     }
 }

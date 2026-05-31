@@ -1,6 +1,8 @@
+using LMSDataExtraction.Api.Middleware;
 using LMSDataExtraction.Application.Interfaces;
 using LMSDataExtraction.Infrastructure.Canvas;
 using LMSDataExtraction.Infrastructure.Persistence;
+using LMSDataExtraction.Infrastructure.Sources;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -15,6 +17,17 @@ void ConfigureDatabase(DbContextOptionsBuilder options)
 {
     options.UseNpgsql(connectionString);
 }
+
+// Repositories
+builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+
+// External source adapters (mock for now, swap to live implementations later)
+builder.Services.AddScoped<IPortflowSource, PortflowMockSource>();
+builder.Services.AddScoped<IFeedPulseSource, FeedPulseMockSource>();
+builder.Services.AddScoped<ICompetenceSource, CompetenceMockSource>();
+
+// Caching
+builder.Services.AddMemoryCache();
 
 // Canvas service
 builder.Services.AddHttpClient<CanvasService>();
@@ -61,6 +74,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<BearerTokenMiddleware>();
+
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

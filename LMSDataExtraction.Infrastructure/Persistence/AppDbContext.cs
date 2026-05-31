@@ -11,6 +11,12 @@ public class AppDbContext : DbContext
     public DbSet<Assignment> Assignments { get; set; }
     public DbSet<Activity> Activities { get; set; }
 
+    public DbSet<LearningGoal> LearningGoals { get; set; }
+    public DbSet<Review> Reviews { get; set; }
+    public DbSet<Snapshot> Snapshots { get; set; }
+    public DbSet<Feedback> Feedback { get; set; }
+    public DbSet<Competence> Competences { get; set; }
+
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
         Users = Set<User>();
@@ -18,5 +24,11 @@ public class AppDbContext : DbContext
         Modules = Set<Module>();
         Assignments = Set<Assignment>();
         Activities = Set<Activity>();
+
+        LearningGoals = Set<LearningGoal>();
+        Reviews = Set<Review>();
+        Snapshots = Set<Snapshot>();
+        Feedback = Set<Feedback>();
+        Competences = Set<Competence>();
     }
 }

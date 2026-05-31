@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LMSDataExtraction.Applicati
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LMSDataExtraction.Infrastructure", "LMSDataExtraction.Infrastructure\LMSDataExtraction.Infrastructure.csproj", "{23EDA14A-8406-4A87-B208-653EE53B8010}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LMSDataExtraction.Tests", "LMSDataExtraction.Tests\LMSDataExtraction.Tests.csproj", "{B7E3F1A2-4C8D-4E2A-9F3B-1A2B3C4D5E6F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{23EDA14A-8406-4A87-B208-653EE53B8010}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{23EDA14A-8406-4A87-B208-653EE53B8010}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{23EDA14A-8406-4A87-B208-653EE53B8010}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7E3F1A2-4C8D-4E2A-9F3B-1A2B3C4D5E6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7E3F1A2-4C8D-4E2A-9F3B-1A2B3C4D5E6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7E3F1A2-4C8D-4E2A-9F3B-1A2B3C4D5E6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7E3F1A2-4C8D-4E2A-9F3B-1A2B3C4D5E6F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
