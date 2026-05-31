@@ -1,3 +1,4 @@
+using LMSDataExtraction.Api.Middleware;
 using LMSDataExtraction.Application.Interfaces;
 using LMSDataExtraction.Infrastructure.Canvas;
 using LMSDataExtraction.Infrastructure.Persistence;
@@ -15,6 +16,12 @@ void ConfigureDatabase(DbContextOptionsBuilder options)
 {
     options.UseNpgsql(connectionString);
 }
+
+// Repositories
+builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+
+// Caching
+builder.Services.AddMemoryCache();
 
 // Canvas service
 builder.Services.AddHttpClient<CanvasService>();
@@ -61,6 +68,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<BearerTokenMiddleware>();
+
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
