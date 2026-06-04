@@ -20,6 +20,10 @@ void ConfigureDatabase(DbContextOptionsBuilder options)
 
 // Repositories
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+builder.Services.AddScoped<IModuleRepository, ModuleRepository>();
+builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
 
 // External source adapters (mock for now, swap to live implementations later)
 builder.Services.AddScoped<IPortflowSource, PortflowMockSource>();
