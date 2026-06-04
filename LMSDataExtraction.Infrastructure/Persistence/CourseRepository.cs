@@ -22,4 +22,26 @@ public class CourseRepository : ICourseRepository
     {
         return await _context.Courses.FindAsync(id);
     }
+
+    public async Task<Course?> GetByCanvasIdAsync(int canvasId)
+    {
+        return await _context.Courses.FirstOrDefaultAsync(
+            course => course.CanvasId == canvasId
+        );
+    }
+
+    public async Task<bool> ExistsByCanvasIdAsync(int canvasId)
+    {
+        Course? existingCourse = await _context.Courses.FirstOrDefaultAsync(
+            course => course.CanvasId == canvasId
+        );
+
+        return existingCourse != null;
+    }
+
+    public async Task SaveAsync(Course course)
+    {
+        _context.Courses.Add(course);
+        await _context.SaveChangesAsync();
+    }
 }
