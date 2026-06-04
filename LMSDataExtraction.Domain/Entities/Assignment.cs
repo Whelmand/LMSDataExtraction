@@ -15,6 +15,11 @@ public class Assignment
     public DateTime? DueDate { get; set; }
     public decimal? MaxScore { get; set; }
 
+    public int? ModuleId { get; set; }
+
     [ForeignKey("CourseId")]
     public Course Course { get; set; } = null!;
+
+    [ForeignKey("ModuleId")]
+    public Module? Module { get; set; }
 }

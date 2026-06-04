@@ -16,9 +16,14 @@ public class Activity
     public decimal? Score { get; set; }
     public DateTime? CompletedAt { get; set; }
 
+    public int? AssignmentId { get; set; }
+
     [ForeignKey("UserId")]
     public User User { get; set; } = null!;
 
     [ForeignKey("CourseId")]
     public Course Course { get; set; } = null!;
+
+    [ForeignKey("AssignmentId")]
+    public Assignment? Assignment { get; set; }
 }
