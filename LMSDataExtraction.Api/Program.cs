@@ -71,11 +71,9 @@ void ConfigureSwagger(SwaggerGenOptions options)
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger altijd ingeschakeld (ook in productie)
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
