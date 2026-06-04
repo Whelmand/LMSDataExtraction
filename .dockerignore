@@ -1,0 +1,26 @@
+# Git
+  .git
+  .gitignore
+
+# Build output
+  **/bin/
+  **/obj/
+
+  # Visual Studio
+  .vs/
+  **/*.user
+  **/*.suo
+
+  # Test results
+  **/TestResults/
+
+  # Local settings
+  **/appsettings.Development.json
+
+  # Docker
+  docker-compose.yml
+  docker/
+
+  # Docs
+  README.md
+  DATABASE.md
