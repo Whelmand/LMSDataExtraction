@@ -1,11 +1,11 @@
 # LMSDataExtraction API — Technische Documentatie
 
-> **Versie:** 1.0  
-> **Datum:** Juni 2025  
-> **Auteur:** Whelmand  
-> **Repository:** https://github.com/Whelmand/LMSDataExtraction  
-> **Live API:** https://lmsdataextraction-api-bbfehtfvhvd9e8a4.spaincentral-01.azurewebsites.net  
-> **Swagger UI:** https://lmsdataextraction-api-bbfehtfvhvd9e8a4.spaincentral-01.azurewebsites.net/swagger  
+> **Versie:** 1.1
+> **Datum:** Juni 2025
+> **Auteur:** Whelmand
+> **Repository:** https://github.com/Whelmand/LMSDataExtraction
+> **Live API:** https://lmsdataextraction-api-bbfehtfvhvd9e8a4.spaincentral-01.azurewebsites.net
+> **Swagger UI:** https://lmsdataextraction-api-bbfehtfvhvd9e8a4.spaincentral-01.azurewebsites.net/swagger
 
 ---
 
@@ -23,17 +23,18 @@
 10. [Lokaal draaien](#10-lokaal-draaien)
 11. [Omgevingsvariabelen](#11-omgevingsvariabelen)
 12. [Bekende beperkingen & toekomstige verbeteringen](#12-bekende-beperkingen--toekomstige-verbeteringen)
+13. [Changelog & opgeloste problemen](#13-changelog--opgeloste-problemen)
 
 ---
 
 ## 1. Projectoverzicht
 
-**LMSDataExtraction** is een .NET 8 Web API die data uit het Canvas LMS (Learning Management System) van Fontys Hogescholen extraheert en opslaat in een lokale PostgreSQL-database. De API dient als tussenlaag tussen Canvas en externe systemen zoals Portflow, FeedPulse en een competentiebeheersysteem.
+**LMSDataExtraction** is een .NET 8 Web API die data uit het Canvas LMS (Learning Management System) van Fontys Hogescholen extraheert en opslaat in een PostgreSQL-database in Azure. De API dient als tussenlaag tussen Canvas en externe systemen zoals Portflow, FeedPulse en een competentiebeheersysteem.
 
 ### Doel
 
 - Cursusgegevens, modules, opdrachten en gebruikersactiviteiten ophalen via de Canvas REST API
-- Geëxtraheerde data persisteren in een eigen PostgreSQL-database
+- Geëxtraheerde data persisteren in een eigen Azure PostgreSQL-database
 - Data beschikbaar stellen aan externe systemen (Portflow, FeedPulse, Competenties)
 - Eenvoudige, veilige toegang via een Bearer-token (Canvas API Token)
 
@@ -43,7 +44,8 @@
 |---|---|
 | Backend framework | ASP.NET Core 8 (Web API) |
 | Programmeertaal | C# 12 |
-| Database | PostgreSQL (via Entity Framework Core + Npgsql) |
+| Database | Azure Database for PostgreSQL Flexible Server |
+| ORM | Entity Framework Core + Npgsql |
 | Containerisatie | Docker (multi-stage build) |
 | Container Registry | GitHub Container Registry (ghcr.io) |
 | Cloud hosting | Azure App Service (Web App for Containers) |
@@ -58,16 +60,16 @@ De applicatie volgt **Clean Architecture** met een strikte scheiding van verantw
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                   API (Presentatielaag)             │
+│  API (Presentatielaag)                              │
 │  Controllers · Middleware · Swagger                 │
 ├─────────────────────────────────────────────────────┤
-│                Application (Businesslaag)           │
+│  Application (Businesslaag)                         │
 │  Interfaces · DTOs · Mapping                        │
 ├─────────────────────────────────────────────────────┤
-│                Domain (Kernlaag)                    │
+│  Domain (Kernlaag)                                  │
 │  Entities (Course, Module, Assignment, User, ...)   │
 ├─────────────────────────────────────────────────────┤
-│              Infrastructure (Datalaag)              │
+│  Infrastructure (Datalaag)                          │
 │  Canvas HTTP-client · Repositories · DbContext      │
 └─────────────────────────────────────────────────────┘
 ```
@@ -76,19 +78,19 @@ De applicatie volgt **Clean Architecture** met een strikte scheiding van verantw
 
 ```
 Gebruiker
-  │  Bearer Token (Canvas API Token)
-  ▼
+│  Bearer Token (Canvas API Token)
+▼
 Azure Web App (lmsdataextraction-api)
-  │
-  ├──► BearerTokenMiddleware (valideert token aanwezigheid)
-  │
-  ├──► Controller (bijv. CourseController)
-  │       │
-  │       ├──► CanvasService ──► Canvas REST API (ophalen data)
-  │       │
-  │       └──► Repository ──► PostgreSQL (opslaan & raadplegen)
-  │
-  └──► JSON response terug naar gebruiker
+│
+├──► BearerTokenMiddleware (valideert token aanwezigheid)
+│
+├──► Controller (bijv. CourseController)
+│      │
+│      ├──► CanvasService ──► Canvas REST API (ophalen data)
+│      │
+│      └──► Repository ──► Azure PostgreSQL (opslaan & raadplegen)
+│
+└──► JSON response terug naar gebruiker
 ```
 
 ---
@@ -98,26 +100,26 @@ Azure Web App (lmsdataextraction-api)
 ```
 LMSDataExtraction/
 │
-├── LMSDataExtraction.Api/              # Web API project (presentatielaag)
+├── LMSDataExtraction.Api/          # Web API project (presentatielaag)
 │   ├── Controllers/
-│   │   ├── ActivityController.cs       # Activiteiten/inleveringen per cursus
-│   │   ├── AssignmentController.cs     # Opdrachten per cursus
-│   │   ├── CourseController.cs         # Cursusoverzicht
-│   │   ├── ModuleController.cs         # Modules per cursus
-│   │   └── PortflowController.cs       # Leerdoelen (Portflow mock)
+│   │   ├── ActivityController.cs   # Activiteiten/inleveringen per cursus
+│   │   ├── AssignmentController.cs # Opdrachten per cursus
+│   │   ├── CourseController.cs     # Cursusoverzicht
+│   │   ├── ModuleController.cs     # Modules per cursus
+│   │   └── PortflowController.cs   # Leerdoelen (Portflow mock)
 │   ├── Middleware/
-│   │   └── BearerTokenMiddleware.cs    # Authenticatie middleware
+│   │   └── BearerTokenMiddleware.cs # Authenticatie middleware
 │   ├── Properties/
-│   ├── Program.cs                      # App configuratie & DI registratie
-│   ├── appsettings.json                # Productie-instellingen
-│   └── appsettings.Development.json    # Ontwikkel-instellingen
+│   ├── Program.cs                  # App configuratie & DI registratie
+│   ├── appsettings.json            # Productie-instellingen
+│   └── appsettings.Development.json # Ontwikkel-instellingen
 │
-├── LMSDataExtraction.Application/      # Businesslaag
-│   ├── Interfaces/                     # Repository & service interfaces
-│   ├── Dtos/                           # Data Transfer Objects (Canvas responses)
-│   └── Mapping/                        # Object-naar-DTO mappers
+├── LMSDataExtraction.Application/  # Businesslaag
+│   ├── Interfaces/                 # Repository & service interfaces
+│   ├── Dtos/                       # Data Transfer Objects (Canvas responses)
+│   └── Mapping/                    # Object-naar-DTO mappers
 │
-├── LMSDataExtraction.Domain/           # Domeinlaag (kernentiteiten)
+├── LMSDataExtraction.Domain/       # Domeinlaag (kernentiteiten)
 │   └── Entities/
 │       ├── Course.cs
 │       ├── Module.cs
@@ -126,27 +128,27 @@ LMSDataExtraction/
 │       ├── Activity.cs
 │       └── LearningGoal.cs
 │
-├── LMSDataExtraction.Infrastructure/   # Infrastructuurlaag
+├── LMSDataExtraction.Infrastructure/ # Infrastructuurlaag
 │   ├── Canvas/
-│   │   └── CanvasService.cs            # HTTP-client voor Canvas API
+│   │   └── CanvasService.cs        # HTTP-client voor Canvas API
 │   ├── Persistence/
-│   │   ├── AppDbContext.cs             # Entity Framework DbContext
-│   │   └── Repositories/              # Concrete repository implementaties
+│   │   ├── AppDbContext.cs         # Entity Framework DbContext
+│   │   └── Repositories/          # Concrete repository implementaties
 │   └── Sources/
-│       ├── PortflowMockSource.cs       # Mock implementatie Portflow
-│       ├── FeedPulseMockSource.cs      # Mock implementatie FeedPulse
-│       └── CompetenceMockSource.cs     # Mock implementatie Competenties
+│       ├── PortflowMockSource.cs   # Mock implementatie Portflow
+│       ├── FeedPulseMockSource.cs  # Mock implementatie FeedPulse
+│       └── CompetenceMockSource.cs # Mock implementatie Competenties
 │
-├── LMSDataExtraction.Tests/            # Unit- en integratietests
+├── LMSDataExtraction.Tests/        # Unit- en integratietests
 │
-├── docker/                             # Docker-gerelateerde bestanden
+├── docker/                         # Docker-gerelateerde bestanden
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml                      # Build & test workflow
-│       └── docker-publish.yml          # Docker build & push workflow
-├── Dockerfile                          # Multi-stage Docker build
-├── .dockerignore                       # Bestanden uitgesloten van Docker build
-└── docker-compose.yml                  # Lokale PostgreSQL database
+│       ├── ci.yml                  # Build & test workflow
+│       └── docker-publish.yml      # Docker build & push workflow
+├── Dockerfile                      # Multi-stage Docker build
+├── .dockerignore                   # Bestanden uitgesloten van Docker build
+└── docker-compose.yml              # Lokale PostgreSQL database
 ```
 
 ---
@@ -237,7 +239,7 @@ Authorization: Bearer <canvas_api_token>
 "Course not found. Fetch courses first via GET /api/v1/Course."
 ```
 
-> ⚠️ **Let op:** Roep eerst `GET /api/v1/Course` aan voordat je modules ophaalt. De cursus moet bekend zijn in de lokale database.
+> ⚠️ **Let op:** Roep eerst `GET /api/v1/Course` aan voordat je modules ophaalt.
 
 ---
 
@@ -267,19 +269,8 @@ Authorization: Bearer <canvas_api_token>
     "name": "Opdracht 1: REST API ontwerpen",
     "dueDate": "2025-03-15T23:59:00Z",
     "maxScore": 10.0
-  },
-  {
-    "id": 55002,
-    "name": "Opdracht 2: Docker implementatie",
-    "dueDate": "2025-04-01T23:59:00Z",
-    "maxScore": 10.0
   }
 ]
-```
-
-**Response 404 Not Found**
-```json
-"Course not found. Fetch courses first via GET /api/v1/Course."
 ```
 
 ---
@@ -288,13 +279,7 @@ Authorization: Bearer <canvas_api_token>
 
 #### `GET /api/v1/Activity/{courseCanvasId}`
 
-Haalt inleveringen (submissions) op van de ingelogde gebruiker voor een specifieke cursus en registreert deze als activiteiten.
-
-**Parameters**
-
-| Parameter | Type | Beschrijving |
-|---|---|---|
-| courseCanvasId | integer | Het Canvas-ID van de cursus |
+Haalt inleveringen (submissions) op van de ingelogde gebruiker voor een specifieke cursus.
 
 **Request**
 ```http
@@ -309,25 +294,9 @@ Authorization: Bearer <canvas_api_token>
     "assignmentId": 55001,
     "score": 8.5,
     "submittedAt": "2025-03-14T20:30:00Z"
-  },
-  {
-    "assignmentId": 55002,
-    "score": null,
-    "submittedAt": null
   }
 ]
 ```
-
-**Response 404 Not Found**
-```json
-"Course not found. Fetch courses first via GET /api/v1/Course."
-```
-
-**Logica:**
-- Bepaalt de huidige gebruiker via Canvas API (`/api/v1/users/self`)
-- Slaat de gebruiker op in de database als deze nog niet bestaat
-- Haalt alle inleveringen (submissions) op van de gebruiker voor de opgegeven cursus
-- Slaat elke nieuwe activiteit op (deduplicatie op gebruiker + opdracht + type)
 
 ---
 
@@ -337,36 +306,17 @@ Authorization: Bearer <canvas_api_token>
 
 Haalt leerdoelen op vanuit het Portflow-systeem. Momenteel een mock-implementatie.
 
-**Request**
-```http
-GET /api/v1/Portflow/learninggoals
-Authorization: Bearer <canvas_api_token>
-```
-
-**Response 200 OK**
-```json
-[
-  {
-    "id": 1,
-    "title": "Leerdoel: CI/CD begrijpen en toepassen",
-    "description": "De student kan een CI/CD pipeline opzetten met GitHub Actions"
-  }
-]
-```
-
-> ℹ️ Dit endpoint gebruikt momenteel een **mock-implementatie** (`PortflowMockSource`). De daadwerkelijke Portflow-integratie is nog in ontwikkeling.
+> ℹ️ Dit endpoint gebruikt momenteel een **mock-implementatie** (`PortflowMockSource`).
 
 ---
 
 ### Aanbevolen aanroepvolgorde
 
-Voor een correcte werking van de API is de volgende volgorde van aanroepen aanbevolen:
-
 ```
-1. GET /api/v1/Course               → Cursussen ophalen & opslaan
-2. GET /api/v1/Module/{id}          → Modules ophalen per cursus
-3. GET /api/v1/Assignment/{id}      → Opdrachten ophalen per cursus
-4. GET /api/v1/Activity/{id}        → Activiteiten registreren per cursus
+1. GET /api/v1/Course                → Cursussen ophalen & opslaan
+2. GET /api/v1/Module/{id}           → Modules ophalen per cursus
+3. GET /api/v1/Assignment/{id}       → Opdrachten ophalen per cursus
+4. GET /api/v1/Activity/{id}         → Activiteiten registreren per cursus
 5. GET /api/v1/Portflow/learninggoals → Leerdoelen ophalen (mock)
 ```
 
@@ -407,9 +357,18 @@ De middleware laat requests naar `/swagger` en `/health` altijd door zonder toke
 
 1. Ga naar https://lmsdataextraction-api-bbfehtfvhvd9e8a4.spaincentral-01.azurewebsites.net/swagger
 2. Klik op de groene **Authorize 🔒** knop rechtsboven
-3. Voer je Canvas API token in het veld in (zonder "Bearer " prefix — Swagger voegt dit automatisch toe)
+3. Voer je Canvas API token in het veld in (zonder "Bearer " prefix)
 4. Klik **Authorize** en dan **Close**
 5. Alle endpoints zijn nu toegankelijk via de **Try it out** functie
+
+### Gebruik in Postman
+
+1. Open Postman en maak een nieuwe request aan
+2. Stel de URL in op bijv. `GET https://lmsdataextraction-api-bbfehtfvhvd9e8a4.spaincentral-01.azurewebsites.net/api/v1/Course`
+3. Ga naar het tabblad **Authorization**
+4. Kies type **Bearer Token**
+5. Plak je Canvas API token in het Token-veld
+6. Klik **Send**
 
 ---
 
@@ -417,81 +376,117 @@ De middleware laat requests naar `/swagger` en `/health` altijd door zonder toke
 
 ### Overzicht
 
-De applicatie gebruikt **PostgreSQL** als database, beheerd via **Entity Framework Core** met de Npgsql provider.
+De applicatie gebruikt **Azure Database for PostgreSQL Flexible Server** als productiedatabase, beheerd via **Entity Framework Core** met de Npgsql provider.
+
+### Azure PostgreSQL — Productie-infrastructuur
+
+| Instelling | Waarde |
+|---|---|
+| Server naam | lmsdataextraction-db |
+| Volledig adres | lmsdataextraction-db.postgres.database.azure.com |
+| Database naam | lmsdata |
+| Gebruikersnaam | lmsadmin |
+| Regio | Spain Central |
+| Compute tier | Burstable B1ms (1 vCore, 2 GiB RAM) |
+| PostgreSQL versie | 16 |
+| SSL vereist | Ja (`SSL Mode=Require`) |
+| Authenticatie | PostgreSQL-only (username/password) |
+
+### Verbindingsstring (productie)
+
+De verbindingsstring wordt ingesteld als **App-instelling** in de Azure Web App:
+
+```
+Naam:  ConnectionStrings__DefaultConnection
+Waarde: Host=lmsdataextraction-db.postgres.database.azure.com;Port=5432;Database=lmsdata;Username=lmsadmin;Password=<wachtwoord>;SSL Mode=Require;Trust Server Certificate=true
+```
+
+> ⚠️ De App-instelling `ConnectionStrings__DefaultConnection` (met dubbele underscore) is de meest betrouwbare methode om connection strings door te geven aan .NET apps in Docker containers op Azure. De waarde overschrijft automatisch `ConnectionStrings:DefaultConnection` uit `appsettings.json`.
+
+### Tabellen automatisch aanmaken
+
+Bij het opstarten van de applicatie worden ontbrekende databasetabellen **automatisch aangemaakt** via `EnsureCreated()` in `Program.cs`:
+
+```csharp
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
+```
+
+Dit zorgt ervoor dat de database bij de eerste deployment direct klaar is voor gebruik, zonder handmatige migratiestappen.
 
 ### Entiteiten
 
 #### Course
 ```
 Course
-├── Id           (int, primary key, auto-increment)
-├── CanvasId     (int, uniek Canvas-ID)
-├── Name         (string)
-└── Description  (string, bevat de CourseCode)
+├── Id          (int, primary key, auto-increment)
+├── CanvasId    (int, uniek Canvas-ID)
+├── Name        (string)
+└── Description (string, bevat de CourseCode)
 ```
 
 #### Module
 ```
 Module
-├── Id           (int, primary key)
-├── CanvasId     (int, uniek Canvas-ID)
-├── Name         (string)
-├── Position     (int, volgorde in cursus)
-└── CourseId     (int, foreign key → Course)
+├── Id       (int, primary key)
+├── CanvasId (int, uniek Canvas-ID)
+├── Name     (string)
+├── Position (int, volgorde in cursus)
+└── CourseId (int, foreign key → Course)
 ```
 
 #### Assignment
 ```
 Assignment
-├── Id           (int, primary key)
-├── CanvasId     (int, uniek Canvas-ID)
-├── Name         (string)
-├── DueDate      (DateTime?, inleverdatum)
-├── MaxScore     (decimal?, maximale score)
-└── CourseId     (int, foreign key → Course)
+├── Id       (int, primary key)
+├── CanvasId (int, uniek Canvas-ID)
+├── Name     (string)
+├── DueDate  (DateTime?, inleverdatum)
+├── MaxScore (decimal?, maximale score)
+└── CourseId (int, foreign key → Course)
 ```
 
 #### User
 ```
 User
-├── Id           (int, primary key)
-├── CanvasId     (int, uniek Canvas-ID)
-├── Name         (string)
-├── Email        (string)
-└── Role         (string, bijv. "StudentEnrollment")
+├── Id       (int, primary key)
+├── CanvasId (int, uniek Canvas-ID)
+├── Name     (string)
+├── Email    (string)
+└── Role     (string, bijv. "StudentEnrollment")
 ```
 
 #### Activity
 ```
 Activity
-├── Id           (int, primary key)
-├── UserId       (int, foreign key → User)
-├── CourseId     (int, foreign key → Course)
-├── SourceType   (string, bijv. "Submission")
-├── SourceId     (int, Canvas assignment ID)
-├── Score        (decimal?, behaalde score)
-└── CompletedAt  (DateTime?, inlevertijdstip)
+├── Id          (int, primary key)
+├── UserId      (int, foreign key → User)
+├── CourseId    (int, foreign key → Course)
+├── SourceType  (string, bijv. "Submission")
+├── SourceId    (int, Canvas assignment ID)
+├── Score       (decimal?, behaalde score)
+└── CompletedAt (DateTime?, inlevertijdstip)
 ```
 
-### Verbindingsstring
+### Lokale database (ontwikkeling)
 
-De database-verbindingsstring wordt geconfigureerd via `appsettings.json` of een omgevingsvariabele:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=lmsdata;Username=postgres;Password=yourpassword"
-  }
-}
-```
-
-### Lokale database starten
+Voor lokaal ontwikkelen wordt PostgreSQL gestart via Docker Compose:
 
 ```bash
 docker-compose up -d
 ```
 
-Dit start een PostgreSQL 16 container op poort 5432.
+Lokale verbindingsstring in `appsettings.Development.json`:
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=lmsdata;Username=postgres;Password=postgres"
+  }
+}
+```
 
 ---
 
@@ -499,7 +494,7 @@ Dit start een PostgreSQL 16 container op poort 5432.
 
 ### Dockerfile
 
-De applicatie gebruikt een **multi-stage Docker build** om de image zo klein en veilig mogelijk te houden:
+De applicatie gebruikt een **multi-stage Docker build**:
 
 **Stage 1 — Build (dotnet/sdk:8.0)**
 - Kopieert projectbestanden en `.sln`
@@ -514,22 +509,10 @@ De applicatie gebruikt een **multi-stage Docker build** om de image zo klein en 
 
 ### Docker image locatie
 
-Het Docker image wordt gepubliceerd naar GitHub Container Registry:
-
 ```
 ghcr.io/whelmand/lmsdataextraction:latest
 ghcr.io/whelmand/lmsdataextraction:main
 ghcr.io/whelmand/lmsdataextraction:sha-<commit-hash>
-```
-
-### .dockerignore
-
-Uitgesloten van de Docker build context:
-
-```
-bin/, obj/, .git/, TestResults/
-appsettings.Development.json
-*.user, .vs/, .idea/
 ```
 
 ---
@@ -551,39 +534,33 @@ De CI/CD pipeline is volledig geautomatiseerd via **GitHub Actions** en bestaat 
 
 ### Workflow 2: Docker Build & Publish (`docker-publish.yml`)
 
-**Trigger:** Push naar `main` (of pull request voor build-only)
+**Trigger:** Push naar `main`
 
 **Stappen:**
 
 ```
 Push naar main
-     │
-     ▼
+│
+▼
 1. Checkout repository
-     │
-     ▼
+│
+▼
 2. Login bij GitHub Container Registry
    (via automatisch GITHUB_TOKEN — geen secrets nodig)
-     │
-     ▼
+│
+▼
 3. Extraheer Docker metadata
    (tags: latest, main, sha-<hash>)
-     │
-     ▼
+│
+▼
 4. Build Docker image (multi-stage)
-     │
-     ▼
+│
+▼
 5. Push naar ghcr.io/whelmand/lmsdataextraction
-     │
-     ▼
-Azure Web App pikt het nieuwe :latest image op
+│
+▼
+Azure Web App pikt het nieuwe :latest image op bij herstart
 ```
-
-**Gebruikte GitHub Actions:**
-- `actions/checkout@v4`
-- `docker/login-action@v3`
-- `docker/metadata-action@v5`
-- `docker/build-push-action@v5`
 
 **Gemiddelde doorlooptijd:** ~2 minuten
 
@@ -591,19 +568,22 @@ Azure Web App pikt het nieuwe :latest image op
 
 ## 9. Azure Deployment
 
-### Infrastructuur
+### Infrastructuur overzicht
 
-| Instelling | Waarde |
+| Resource | Details |
 |---|---|
-| Service | Azure App Service (Web App for Containers) |
-| Resource Group | rg-lmsdataextraction |
-| App naam | lmsdataextraction-api |
-| Regio | Spain Central |
+| **Web App** | lmsdataextraction-api |
 | App Service Plan | ASP-rglmsdataextraction-b0e5 (Basic B1) |
+| Resource Group | rg-lmsdataextraction |
+| Regio | Spain Central |
 | OS | Linux |
 | Container image | ghcr.io/whelmand/lmsdataextraction:latest |
 | Poort | 8080 |
 | Abonnement | Azure for Students |
+| **PostgreSQL Server** | lmsdataextraction-db |
+| DB adres | lmsdataextraction-db.postgres.database.azure.com |
+| Database | lmsdata |
+| Compute tier | Burstable B1ms |
 
 ### Live URL's
 
@@ -615,18 +595,29 @@ Azure Web App pikt het nieuwe :latest image op
 
 ### Deployment aanpak
 
-Azure App Service for Containers haalt het image op uit GitHub Container Registry. Het registry is publiek toegankelijk, waardoor geen registry-credentials in Azure nodig zijn.
-
 Bij elke push naar `main`:
 1. GitHub Actions bouwt en pusht een nieuw image naar `ghcr.io/...lmsdataextraction:latest`
-2. Azure Web App herstart automatisch en trekt het nieuwe `:latest` image op
+2. Azure Web App herstart en trekt het nieuwe `:latest` image op
+3. `EnsureCreated()` controleert of alle tabellen bestaan en maakt ze aan indien nodig
+
+### Omgevingsvariabelen in Azure
+
+De volgende instellingen zijn geconfigureerd in de Azure Web App onder **Omgevingsvariabelen**:
+
+| Type | Naam | Beschrijving |
+|---|---|---|
+| App-instelling | `ConnectionStrings__DefaultConnection` | PostgreSQL verbindingsstring (overschrijft appsettings.json) |
+| App-instelling | `WEBSITES_ENABLE_APP_SERVICE_STORAGE` | Azure standaardinstelling |
+
+> 💡 **Technische toelichting:** Azure App Service geeft connection strings door als omgevingsvariabelen. Voor Docker containers is de meest betrouwbare methode om dit te doen via een App-instelling met de naam `ConnectionStrings__DefaultConnection` (dubbele underscore = .NET configuratie-hiërarchie). Dit overschrijft automatisch de waarde in `appsettings.json`.
 
 ### Handmatig herstarten in Azure Portal
 
 1. Ga naar https://portal.azure.com
 2. Zoek de resource **lmsdataextraction-api**
-3. Klik op **Opnieuw starten** in de toolbar
+3. Klik op **Opnieuw starten** in de toolbar bovenaan
 4. Bevestig met **Ja**
+5. De melding "Web-app is opnieuw gestart" verschijnt rechtsbovenin
 
 ---
 
@@ -671,7 +662,6 @@ dotnet run --project LMSDataExtraction.Api
 
 De API is nu beschikbaar op:
 - http://localhost:5000
-- https://localhost:5001
 - Swagger: http://localhost:5000/swagger
 
 ### Stap 5: Tests uitvoeren
@@ -696,11 +686,12 @@ docker run -p 8080:8080 \
 
 ## 11. Omgevingsvariabelen
 
-| Variabele | Standaard | Beschrijving |
-|---|---|---|
-| `ASPNETCORE_ENVIRONMENT` | Production | Omgeving (Development/Production) |
-| `ASPNETCORE_URLS` | http://+:8080 | Luisteradres en poort |
-| `ConnectionStrings__DefaultConnection` | — | PostgreSQL verbindingsstring |
+| Variabele | Standaard (lokaal) | Productie (Azure) | Beschrijving |
+|---|---|---|---|
+| `ASPNETCORE_ENVIRONMENT` | Development | Production | Omgeving |
+| `ASPNETCORE_URLS` | http://+:5000 | http://+:8080 | Luisteradres en poort |
+| `ConnectionStrings__DefaultConnection` | localhost:5432 | Azure PostgreSQL | Volledige PostgreSQL verbindingsstring |
+| `Canvas:BaseUrl` | https://fhict.instructure.com/api/v1 | (zelfde) | Canvas API basis-URL |
 
 ---
 
@@ -708,22 +699,56 @@ docker run -p 8080:8080 \
 
 ### Huidige beperkingen
 
-- **Mock-implementaties:** Portflow, FeedPulse en Competentie-bronnen zijn momenteel mock-implementaties. De daadwerkelijke API-integraties zijn nog niet gerealiseerd.
-- **Geen automatische database migraties:** Entity Framework migraties worden niet automatisch uitgevoerd bij opstarten.
-- **Azure for Students quota:** Het Azure for Students abonnement heeft beperkte resources. Azure Container Registry kon niet worden aangemaakt door policy-beperkingen; GitHub Container Registry wordt als alternatief gebruikt.
+- **Mock-implementaties:** Portflow, FeedPulse en Competentie-bronnen zijn momenteel mock-implementaties.
+- **Azure for Students quota:** Azure Container Registry kon niet worden aangemaakt door policy-beperkingen; GitHub Container Registry wordt als alternatief gebruikt.
 - **Geen HTTPS-redirect in container:** De container luistert alleen op HTTP (poort 8080). HTTPS-terminatie vindt plaats op Azure App Service niveau.
+- **Geen automatische redeploy:** Na een nieuwe Docker push moet de Web App handmatig herstarten of moet een webhook worden geconfigureerd.
 
 ### Toekomstige verbeteringen
 
 - [ ] Implementatie van echte Portflow API-integratie
 - [ ] Implementatie van FeedPulse API-integratie
 - [ ] Implementatie van Competentie API-integratie
-- [ ] Automatische database migraties bij startup
-- [ ] Toevoegen van een deploy-stap in de GitHub Actions workflow (Azure Web App automatisch herstarten na push)
+- [ ] Automatische redeploy-webhook in GitHub Actions (Azure Web App herstarten na push)
 - [ ] Health check endpoint configureren in Azure
 - [ ] Logging met Azure Application Insights
 - [ ] Rate limiting voor Canvas API-aanroepen
 - [ ] Caching uitbreiden voor Canvas-responses
+- [ ] EF Core Migrations invoeren ter vervanging van EnsureCreated (voor schema-updates)
+
+---
+
+## 13. Changelog & opgeloste problemen
+
+### Versie 1.1 — Juni 2025
+
+#### ✅ Swagger ingeschakeld in productie
+**Probleem:** Swagger was omgeven door `if (app.Environment.IsDevelopment())`, waardoor het niet beschikbaar was in productie.
+**Oplossing:** De if-conditie verwijderd zodat Swagger altijd ingeschakeld is.
+
+#### ✅ Azure PostgreSQL database opgezet
+**Wat:** Azure Database for PostgreSQL Flexible Server aangemaakt in Spain Central op de Burstable B1ms tier (goedkoopste optie, valt onder de 750 gratis uren van Azure for Students).
+**Details:** Server `lmsdataextraction-db`, database `lmsdata`, gebruiker `lmsadmin`.
+
+#### ✅ Database verbinding geconfigureerd voor Docker containers op Azure
+**Probleem:** De applicatie verbond nog met `localhost:5433` in plaats van de Azure PostgreSQL server. De connection string in de "Verbindingsreeksen" sectie van Azure werd niet opgepikt door de Docker container.
+**Oorzaak:** Voor .NET apps in Docker containers op Azure App Service werkt de verbindingsreeks-instelling soms niet betrouwbaar. De omgevingsvariabele wordt op een andere manier doorgegeven dan verwacht.
+**Oplossing:** Een **App-instelling** toegevoegd met de naam `ConnectionStrings__DefaultConnection` (dubbele underscore). In .NET's configuratiesysteem werkt dubbele underscore als scheidingsteken voor geneste sleutels, wat equivalent is aan `ConnectionStrings:DefaultConnection` in appsettings.json. Dit is de meest betrouwbare methode voor Docker containers.
+
+#### ✅ Databasetabellen automatisch aangemaakt
+**Probleem:** De Azure PostgreSQL database was leeg — er bestonden nog geen tabellen. De app crashte met een 500-fout bij het eerste verzoek.
+**Oplossing:** `db.Database.EnsureCreated()` toegevoegd aan het opstartproces in `Program.cs`. Bij elke start controleert de applicatie of de tabellen bestaan en maakt ze aan indien nodig.
+
+```csharp
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
+```
+
+#### Resultaat
+Na deze wijzigingen geeft de API bij aanroep zonder token een correcte **401 Unauthorized** terug (in plaats van een 500-fout). De volledige flow van code-push tot werkende API in Azure is operationeel.
 
 ---
 
@@ -740,4 +765,4 @@ docker run -p 8080:8080 \
 
 ---
 
-*Documentatie gegenereerd op basis van de broncode en infrastructuur van het LMSDataExtraction project.*
+*Documentatie bijgewerkt op basis van de volledige Azure deployment inclusief PostgreSQL database configuratie.*
