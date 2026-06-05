@@ -71,6 +71,13 @@ void ConfigureSwagger(SwaggerGenOptions options)
 
 var app = builder.Build();
 
+// Automatisch de database tabellen aanmaken als die nog niet bestaan (voor Azure deployment)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
+
 // Swagger altijd ingeschakeld (ook in productie)
 app.UseSwagger();
 app.UseSwaggerUI();
