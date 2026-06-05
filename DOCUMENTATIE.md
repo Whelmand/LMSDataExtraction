@@ -1,7 +1,7 @@
 # LMSDataExtraction API — Technische Documentatie
 
-> **Versie:** 1.1
-> **Datum:** Juni 2025
+> **Versie:** 1.2
+> **Datum:** Juni 2026
 > **Auteur:** Whelmand
 > **Repository:** https://github.com/Whelmand/LMSDataExtraction
 > **Live API:** https://lmsdataextraction-api-bbfehtfvhvd9e8a4.spaincentral-01.azurewebsites.net
@@ -531,10 +531,11 @@ De CI/CD pipeline is volledig geautomatiseerd via **GitHub Actions** en bestaat 
 3. Restore NuGet packages
 4. Build de solution
 5. Voer unit tests uit
+6. Upload test results als artifact
 
-### Workflow 2: Docker Build & Publish (`docker-publish.yml`)
+### Workflow 2: Docker Build, Publish & Deploy (`docker-publish.yml`)
 
-**Trigger:** Push naar `main`
+**Trigger:** Push naar `main` (alleen — niet bij pull requests)
 
 **Stappen:**
 
@@ -559,10 +560,48 @@ Push naar main
 5. Push naar ghcr.io/whelmand/lmsdataextraction
 │
 ▼
-Azure Web App pikt het nieuwe :latest image op bij herstart
+6. Login bij Azure
+   (via AZURE_CREDENTIALS secret — service principal)
+│
+▼
+7. Restart Azure Web App (lmsdataextraction-api)
+   → Web App trekt automatisch het nieuwe :latest image op
 ```
 
-**Gemiddelde doorlooptijd:** ~2 minuten
+**Gemiddelde doorlooptijd:** ~1-2 minuten
+
+### Vereiste GitHub Secrets
+
+| Secret naam | Beschrijving |
+|---|---|
+| `AZURE_CREDENTIALS` | Azure service principal JSON (clientId, clientSecret, subscriptionId, tenantId) |
+
+De `AZURE_CREDENTIALS` secret is aangemaakt via Azure Cloud Shell:
+```bash
+az ad sp create-for-rbac \
+  --name "lmsdataextraction-github-actions" \
+  --role contributor \
+  --scopes /subscriptions/<subscription-id>/resourceGroups/rg-lmsdataextraction \
+  --sdk-auth
+```
+
+### CI/CD testen
+
+De volledige pipeline testen doe je door een kleine wijziging naar `main` te pushen:
+
+```bash
+# Optie 1 — lege commit (geen code wijziging nodig)
+git commit --allow-empty -m "ci: test pipeline"
+git push origin main
+```
+
+Daarna controleer je in volgorde:
+1. **GitHub Actions** → beide workflows groen? (Actions-tabblad in de repo)
+2. **GHCR** → nieuw image gepusht? (Packages-sectie op je GitHub profiel)
+3. **Azure Web App** → herstart gelukt? (Activity Log in Azure Portal)
+4. **Live API** → reageert de API nog correct? (Swagger UI of Postman)
+
+**Gemiddelde doorlooptijd:** ~1-2 minuten
 
 ---
 
@@ -702,14 +741,13 @@ docker run -p 8080:8080 \
 - **Mock-implementaties:** Portflow, FeedPulse en Competentie-bronnen zijn momenteel mock-implementaties.
 - **Azure for Students quota:** Azure Container Registry kon niet worden aangemaakt door policy-beperkingen; GitHub Container Registry wordt als alternatief gebruikt.
 - **Geen HTTPS-redirect in container:** De container luistert alleen op HTTP (poort 8080). HTTPS-terminatie vindt plaats op Azure App Service niveau.
-- **Geen automatische redeploy:** Na een nieuwe Docker push moet de Web App handmatig herstarten of moet een webhook worden geconfigureerd.
 
 ### Toekomstige verbeteringen
 
 - [ ] Implementatie van echte Portflow API-integratie
 - [ ] Implementatie van FeedPulse API-integratie
 - [ ] Implementatie van Competentie API-integratie
-- [ ] Automatische redeploy-webhook in GitHub Actions (Azure Web App herstarten na push)
+- [x] ~~Automatische redeploy via GitHub Actions — Azure Web App herstart nu automatisch na elke push naar main~~ ✅ Opgelost in v1.2
 - [ ] Health check endpoint configureren in Azure
 - [ ] Logging met Azure Application Insights
 - [ ] Rate limiting voor Canvas API-aanroepen
@@ -719,6 +757,20 @@ docker run -p 8080:8080 \
 ---
 
 ## 13. Changelog & opgeloste problemen
+
+### Versie 1.2 — Juni 2026
+
+#### ✅ Volledige CI/CD pipeline met automatische Azure deployment
+**Wat:** De `docker-publish.yml` workflow uitgebreid met automatische deployment naar Azure.
+**Oplossing:** Twee extra stappen toegevoegd na de Docker push:
+1. `azure/login@v2` — logt in bij Azure via een service principal (`AZURE_CREDENTIALS` secret)
+2. `azure/CLI@v2` — voert `az webapp restart` uit, waardoor de Web App het nieuwe `:latest` image ophaalt
+
+De `AZURE_CREDENTIALS` secret is aangemaakt via Azure Cloud Shell met `az ad sp create-for-rbac` en opgeslagen in GitHub Settings → Secrets and variables → Actions.
+
+**Resultaat:** Elke push naar `main` triggert nu de volledige flow: build → test → push naar GHCR → deploy naar Azure. Handmatig herstarten is niet meer nodig.
+
+---
 
 ### Versie 1.1 — Juni 2025
 
