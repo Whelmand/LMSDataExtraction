@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LMSDataExtraction.Domain.Entities;
 
-// Komt overeen met Portflow AssessmentSnapshot.
+// Corresponds to Portflow AssessmentSnapshot.
 public class Snapshot
 {
     public int Id { get; set; }

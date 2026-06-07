@@ -3,10 +3,10 @@ using LMSDataExtraction.Domain.Entities;
 
 namespace LMSDataExtraction.Infrastructure.Sources;
 
-// In-memory mock voor de Portflow integratie.
-// Bewust geen database-afhankelijkheid: deze source is een stub totdat
-// de echte Portflow API-integratie geimplementeerd wordt. Hierdoor werkt
-// het endpoint overal (lokaal, Docker, Azure) zonder seed-scripts.
+// In-memory mock for the Portflow integration.
+// Deliberately no database dependency: this source is a stub until
+// the real Portflow API integration is implemented. This way
+// the endpoint works everywhere (local, Docker, Azure) without seed scripts.
 public class PortflowMockSource : IPortflowSource
 {
     private static readonly DateTime SeedTimestamp =

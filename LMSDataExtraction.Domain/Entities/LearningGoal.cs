@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LMSDataExtraction.Domain.Entities;
 
-// Komt overeen met Portflow RepositoryGoal.
+// Corresponds to Portflow RepositoryGoal.
 public class LearningGoal
 {
     public int Id { get; set; }

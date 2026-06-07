@@ -30,6 +30,14 @@ builder.Services.AddScoped<IPortflowSource, PortflowMockSource>();
 builder.Services.AddScoped<IFeedPulseSource, FeedPulseMockSource>();
 builder.Services.AddScoped<ICompetenceSource, CompetenceMockSource>();
 
+// HBO-i competence tool: singleton so the in-memory state is preserved
+// between requests (disappears when the Web App restarts).
+builder.Services.AddSingleton<IHboiCompetenceStore, HboiCompetenceMockStore>();
+
+// FeedPulse feedback tool: singleton to hold student responses during a
+// session (also reset on restart).
+builder.Services.AddSingleton<IFeedPulseFeedbackStore, FeedPulseFeedbackMockStore>();
+
 // Caching
 builder.Services.AddMemoryCache();
 
@@ -71,7 +79,7 @@ void ConfigureSwagger(SwaggerGenOptions options)
 
 var app = builder.Build();
 
-// Automatisch de database tabellen aanmaken als die nog niet bestaan (voor Azure deployment)
+// Automatically create the database tables if they do not exist yet (for Azure deployment)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
