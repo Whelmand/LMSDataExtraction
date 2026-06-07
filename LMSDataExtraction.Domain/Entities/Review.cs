@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LMSDataExtraction.Domain.Entities;
 
-// Komt overeen met Portflow ProgressReviewResult.
+// Corresponds to Portflow ProgressReviewResult.
 public class Review
 {
     public int Id { get; set; }
