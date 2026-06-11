@@ -14,6 +14,7 @@ public class CanvasService : ICanvasService
     private const string AssignmentsCacheKeyPrefix = "canvas:assignments:";
     private const string CurrentUserCacheKeyPrefix = "canvas:currentuser:";
     private const string SubmissionsCacheKeyPrefix = "canvas:submissions:";
+    private const string AssignmentSubmissionsCacheKeyPrefix = "canvas:assignmentsubmissions:";
     private const string OutcomeGroupsCacheKeyPrefix = "canvas:outcomegroups:";
     private const string OutcomesCacheKeyPrefix = "canvas:outcomes:";
     private const string PeerReviewsCacheKeyPrefix = "canvas:peerreviews:";
@@ -195,6 +196,44 @@ public class CanvasService : ICanvasService
 
         HttpResponseMessage response = await _httpClient.GetAsync(
             _baseUrl + "/courses/" + courseCanvasId + "/students/submissions?student_ids[]=self"
+        );
+        response.EnsureSuccessStatusCode();
+
+        string json = await response.Content.ReadAsStringAsync();
+
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        IEnumerable<CanvasSubmissionDto>? submissions = JsonSerializer.Deserialize<IEnumerable<CanvasSubmissionDto>>(json, options);
+
+        if (submissions == null)
+        {
+            return new List<CanvasSubmissionDto>();
+        }
+
+        _cache.Set(cacheKey, submissions, CacheDuration);
+
+        return submissions;
+    }
+
+    public async Task<IEnumerable<CanvasSubmissionDto>> GetSubmissionsByAssignmentAsync(string token, int courseCanvasId, int assignmentCanvasId)
+    {
+        string cacheKey = AssignmentSubmissionsCacheKeyPrefix + token + ":" + courseCanvasId + ":" + assignmentCanvasId;
+
+        if (_cache.TryGetValue(cacheKey, out IEnumerable<CanvasSubmissionDto>? cachedSubmissions))
+        {
+            if (cachedSubmissions != null)
+            {
+                return cachedSubmissions;
+            }
+        }
+
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        HttpResponseMessage response = await _httpClient.GetAsync(
+            _baseUrl + "/courses/" + courseCanvasId + "/assignments/" + assignmentCanvasId + "/submissions"
         );
         response.EnsureSuccessStatusCode();
 

@@ -9,6 +9,7 @@ public interface ICanvasService
     Task<IEnumerable<CanvasAssignmentDto>> GetAssignmentsAsync(string token, int courseCanvasId);
     Task<CanvasUserDto> GetCurrentUserAsync(string token);
     Task<IEnumerable<CanvasSubmissionDto>> GetSubmissionsAsync(string token, int courseCanvasId);
+    Task<IEnumerable<CanvasSubmissionDto>> GetSubmissionsByAssignmentAsync(string token, int courseCanvasId, int assignmentCanvasId);
     Task<IEnumerable<CanvasOutcomeGroupDto>> GetOutcomeGroupsAsync(string token, int courseCanvasId);
     Task<IEnumerable<CanvasOutcomeDto>> GetOutcomesAsync(string token, int courseCanvasId);
     Task<IEnumerable<CanvasPeerReviewDto>> GetPeerReviewsAsync(string token, int courseCanvasId, int assignmentCanvasId);
