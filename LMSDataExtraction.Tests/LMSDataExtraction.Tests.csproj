@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\LMSDataExtraction.Domain\LMSDataExtraction.Domain.csproj" />
     <ProjectReference Include="..\LMSDataExtraction.Application\LMSDataExtraction.Application.csproj" />
+    <ProjectReference Include="..\LMSDataExtraction.Infrastructure\LMSDataExtraction.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
